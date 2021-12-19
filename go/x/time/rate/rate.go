@@ -397,8 +397,6 @@ func (lim *Limiter) advance(now time.Time) (newNow time.Time, newLast time.Time,
 	if now.Before(last) {
 		last = now
 	}
-
-	// Avoid making delta overflow below when last is very old.
 	// maxElapsed表示，将Token桶填满需要多久
 	// 为什么要拆分两步做，是为了防止后面的delta溢出
 	// 因为默认情况下，last为0，此时delta算出来的，会非常大
@@ -410,8 +408,6 @@ func (lim *Limiter) advance(now time.Time) (newNow time.Time, newLast time.Time,
 	if elapsed > maxElapsed {
 		elapsed = maxElapsed
 	}
-
-	// Calculate the new number of tokens, due to time that passed.
 	// 计算下过去这段时间，一共产生了多少token
 	delta := lim.limit.tokensFromDuration(elapsed)
 
