@@ -397,11 +397,9 @@ func (lim *Limiter) advance(now time.Time) (newNow time.Time, newLast time.Time,
 	if now.Before(last) {
 		last = now
 	}
-	// maxElapsed表示，将Token桶填满需要多久
-	// 为什么要拆分两步做，是为了防止后面的delta溢出
-	// 因为默认情况下，last为0，此时delta算出来的，会非常大
+	// maxElapsed表示，将Token桶填满需要多久,先计算出填满桶所话费的时间，再和上次执行该方法的时间差做比较,取出时间差比较小的
+	// 其目的是为了获取时间间隔中生成的tokens,不直接使用计算时间差*Limit的方式,避免了可能存在的溢出问题
 	maxElapsed := lim.limit.durationFromTokens(float64(lim.burst) - lim.tokens)
-
 	// elapsed 表示从当前到上次一共过去了多久
 	// 当然了，elapsed不能大于将桶填满的时间
 	elapsed := now.Sub(last)
@@ -410,13 +408,11 @@ func (lim *Limiter) advance(now time.Time) (newNow time.Time, newLast time.Time,
 	}
 	// 计算下过去这段时间，一共产生了多少token
 	delta := lim.limit.tokensFromDuration(elapsed)
-
 	// token取burst最大值，因为显然token数不能大于桶容量
 	tokens := lim.tokens + delta
 	if burst := float64(lim.burst); tokens > burst {
 		tokens = burst
 	}
-
 	return now, last, tokens
 }
 
